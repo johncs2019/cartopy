@@ -32,22 +32,18 @@ import matplotlib.spines as mspines
 import matplotlib.transforms as mtransforms
 import numpy as np
 import numpy.ma as ma
-import packaging
 import shapely.geometry as sgeom
 
 from cartopy import config
 import cartopy.crs as ccrs
 import cartopy.feature
+from cartopy.mpl import _MPL_38
 import cartopy.mpl.contour
 import cartopy.mpl.feature_artist as feature_artist
 import cartopy.mpl.geocollection
 import cartopy.mpl.patch as cpatch
 from cartopy.mpl.slippy_image_artist import SlippyImageArtist
 
-
-_MPL_VERSION = packaging.version.parse(mpl.__version__)
-assert _MPL_VERSION.release >= (3, 4), \
-    'Cartopy is only supported with Matplotlib 3.4 or greater.'
 
 # A nested mapping from path, source CRS, and target projection to the
 # resulting transformed paths:
@@ -999,12 +995,13 @@ class GeoAxes(matplotlib.axes.Axes):
 
         return super().set_yticks(yticks, minor=minor)
 
-    def stock_img(self, name='ne_shaded'):
+    def stock_img(self, name='ne_shaded', **kwargs):
         """
         Add a standard image to the map.
 
-        Currently, the only (and default) option is a downsampled version of
-        the Natural Earth shaded relief raster.
+        Currently, the only (and default) option for image is a downsampled
+        version of the Natural Earth shaded relief raster. Other options
+        (e.g., alpha) will be passed to :func:`GeoAxes.imshow`.
 
         """
         if name == 'ne_shaded':
@@ -1014,7 +1011,8 @@ class GeoAxes(matplotlib.axes.Axes):
 
             return self.imshow(imread(fname), origin='upper',
                                transform=source_proj,
-                               extent=[-180, 180, -90, 90])
+                               extent=[-180, 180, -90, 90],
+                               **kwargs)
         else:
             raise ValueError('Unknown stock image %r.' % name)
 
@@ -1604,7 +1602,7 @@ class GeoAxes(matplotlib.axes.Axes):
         result = super().contour(*args, **kwargs)
 
         # We need to compute the dataLim correctly for contours.
-        if _MPL_VERSION.release[:2] < (3, 8):
+        if not _MPL_38:
             bboxes = [col.get_datalim(self.transData)
                       for col in result.collections
                       if col.get_paths()]
@@ -1655,7 +1653,7 @@ class GeoAxes(matplotlib.axes.Axes):
         result = super().contourf(*args, **kwargs)
 
         # We need to compute the dataLim correctly for contours.
-        if _MPL_VERSION.release[:2] < (3, 8):
+        if not _MPL_38:
             bboxes = [col.get_datalim(self.transData)
                       for col in result.collections
                       if col.get_paths()]
@@ -1952,7 +1950,7 @@ class GeoAxes(matplotlib.axes.Axes):
         # masked, so this will only draw a limited subset of
         # polygons that were actually wrapped.
 
-        if _MPL_VERSION.release[:2] < (3, 8):
+        if not _MPL_38:
             # We will add the original data mask in later to
             # make sure that set_array can work in future
             # calls on the proper sized array inputs.
